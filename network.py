@@ -2,6 +2,7 @@
 import random
 import logging
 from train import train_and_score
+from utils import network_to_json
 
 class Network():
     """Represent a network and let us operate on it.
@@ -19,6 +20,7 @@ class Network():
                 activation (list): ['relu', 'elu']
                 optimizer (list): ['rmsprop', 'adam']
         """
+        self.model_type = None
         self.accuracy = 0.
         self.nn_param_choices = nn_param_choices
         self.params = {}  # (dic): represents MLP network parameters
@@ -44,19 +46,25 @@ class Network():
             config (str): instance of Config.
 
         """
+        self.model_type = config.model_type
+
         if self.accuracy == 0.:
-            score, model = train_and_score(self, config)
+            score, _ = train_and_score(config, self)
             self.accuracy = score[1]
             
-            print('*'*100)
-            print('acc %.2f' % score[1])
-            print('*'*100)
-            
-            if model:
-                message = '\n{}\nLoss: {} \nAcc: {}\n{}\n\n'.format('='*65, score[0], score[1], '='*65)
-                logging.info('\n\nModel:')
-                logging.info( model.summary() )
-                logging.info(message)
+            if config.verbose == 1:
+                self.log( score )
+            elif config.verbose == 2 and config.min_acc <= score[1]:
+                self.log(score)
+            if config.min_acc <= score[1]:
+                network_to_json( self )
+
+    def log( self, score ):
+        message = '\n{}\nLoss: {} \nAcc: {}\n{}\n\n'.format(
+            '='*65, score[0], score[1], '='*65)
+        logging.info('\n\nModel:')
+        logging.info(self.model())
+        logging.info(message)
 
     def model(self):
         p = self.params
@@ -67,8 +75,9 @@ class Network():
             'ann_activation': p['ann_activation'],
             'optimizer': p['optimizer'],
             'dropout': p['dropout'],
-            'pooling': p['pooling']
-           }
+            'pooling': p['pooling'],
+            'model_type': self.model_type
+        }
         cnn_layers = []
         for i in range(self.params['cnn_nb_layers']):
             cnn_layers.append( self.params['cnn_nb_neurons_%d' % (i+1)] )

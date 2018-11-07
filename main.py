@@ -1,7 +1,8 @@
 """Entry point to evolving the neural network. Start here."""
 import logging
 from optimizer import Optimizer
-from utils import network_to_json
+from utils import network_to_json, json_to_model
+from train import train_and_score
 
 # Setup logging.
 logging.basicConfig(
@@ -11,7 +12,7 @@ logging.basicConfig(
     filename='log_aug_1.txt'
 )
 
-def train_networks(networks, dataset):
+def train_networks(networks, config):
     """Train each network.
 
     Args:
@@ -19,7 +20,7 @@ def train_networks(networks, dataset):
         dataset (str): Dataset to use for training/evaluating
     """
     for network in networks:
-        network.train(dataset)
+        network.train(config)
 
 def get_average_accuracy(networks):
     """Get the average accuracy for a group of networks.
@@ -90,7 +91,7 @@ def print_networks(networks):
         network.print_network()
         network_to_json(network)
 
-def main( config ):
+def evolve( config ):
     """Evolve a network."""
     generations = config.generations  # Number of times to evole the population.
     population  = config.population  # Number of networks in each generation.
@@ -127,27 +128,47 @@ def main( config ):
 
 class Config():
     # Data settings
-    dataset_dir     = './aug_2'
-    labels_filename = 'labels.txt'
-    input_shape     = (256, 256, 1) # for cnn
-    # input_shape     = (256*256*1,)
+    dataset_dir     = '../dataset_padded'
+    labels_filename = 'Y_truth.txt'
+    # input_shape     = (256, 256, 1) # for cnn
+    input_shape     = (256*256*1,)
     n_classes       = 2
 
 
     # Network settings
-    epochs  = 10000 # not exactly
+    epochs  = 1000 # not exactly
+    batch_size = 32
     steps_per_epoch = 10
     validation_steps = 10
-    batch_size = 32
     use_generator = False
 
     # GA settings
-    network_type = 'cnn'
-    generations  = 10
-    population   = 20
+    model_type   = 'ann'
+    generations  = 1
+    population   = 2
+
+    #general settings
+    verbose = 1
+    min_acc = 0.5
+    early = False
 
 
+
+def train( path, config ):
+    model = json_to_model(path, config)
+    score, model = train_and_score(config, model=model)
+    print(score)
+    model.summary()
+    model.save('model_%.2f.h5' % score[1])
 
 if __name__ == '__main__':
+    # TODO: add Argparser
     config = Config()
-    main( config )
+    t = 1
+    if t == 0:
+        evolve( config )
+    elif t == 1:
+        model_path = 'acc.0.7632_opt.nadam_act.elu.json'
+        train(model_path, config)
+    else: print('Nothing to do ;)')
+    
