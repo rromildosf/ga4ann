@@ -125,24 +125,27 @@ def compile_model(network, nb_classes, input_shape, network_type='mlp'):
     # print('Training %s\n' % network_type)
 
     if network_type == 'cnn':
-        model.add(Conv2D(cnn_nb_neurons[0], (3,3), activation=cnn_activation,
+        model.add(Conv2D(cnn_nb_neurons[0], (3,3), activation=cnn_activation, padding='same',
                         input_shape=input_shape))
-        
+        pool = 0
         for i in range(1, cnn_nb_layers):
-            model.add(Conv2D(cnn_nb_neurons[i], (3, 3), activation=cnn_activation))
-            if i % pooling == 0:
+            model.add(Conv2D(cnn_nb_neurons[i], (3, 3), activation=cnn_activation, padding='same'))
+            if i % pooling == 0 and pool <= pooling:
                 model.add( MaxPooling2D(2) )
+                pool += 1
+                
         model.add( Flatten() )
     else: #mlp
         # Add each layer.
         index = 1
         model.add(Dense(ann_nb_neurons[0], activation=ann_activation,
                         input_shape=input_shape))
-    
+    drop = 0
     for i in range(index, ann_nb_layers):
         model.add(Dense(ann_nb_neurons[i], activation=ann_activation))
-        if i % dropout == 0:
+        if i % dropout == 0 and drop <= dropout:
             model.add( Dropout(0.5) )
+            drop += 1
 
     # Output layer.
     model.add(Dense(nb_classes, activation='softmax'))
@@ -176,7 +179,7 @@ def train_and_score(network, config):
         x_train, y_train, x_test, y_test = load_dataset( config )
 
         model = compile_model( network, config.n_classes, config.input_shape, config.network_type )
-
+        print(model.summary())
         if config.use_generator:
             model.fit_generator( 
                 generator( x_train, y_train, config.batch_size ),
@@ -198,7 +201,7 @@ def train_and_score(network, config):
         score = model.evaluate(x_test, y_test, verbose=0)
         return score, model
 
-    except IOError as e:
+    except Exception as e:
         print(e)
-        print('Error on fit')
+        print('**** Error on fit ****')
         return [0.0, 0.0], None

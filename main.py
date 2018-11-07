@@ -104,8 +104,9 @@ def main( config ):
         'ann_nb_neurons': [2, 32, 12, 64, 128, 13, 17, 23, 29, 31, 43],
         'ann_activation': ['relu', 'elu', 'tanh', 'sigmoid'],
         'optimizer'     : ['rmsprop', 'adam', 'sgd', 'adagrad', 'adadelta', 'adamax', 'nadam'],
-        'dropout': [1, 2, 3, 4, 5, 6],  
-        'pooling' : [1, 2, 3, 4, 5, 6], # can produce erros if cnn_nb_layers is great
+        'dropout': [1, 2, 3, 4, 5, 6],  # 2**8
+        'pooling' : [1, 2, 3, 4, 5, 6], # the great value should be X-2, X is the exponent of size of 
+        # image. ie: image shape is (256, 256, deep), 256 is 2**8, so 8 is X, so the great value should be 8-2 = 6
     }
 
     cnn_nb_layers = nn_param_choices['cnn_nb_layers']
@@ -126,8 +127,8 @@ def main( config ):
 
 class Config():
     # Data settings
-    dataset_dir     = '../dataset_padded'
-    labels_filename = 'Y_truth.txt'
+    dataset_dir     = './aug_2'
+    labels_filename = 'labels.txt'
     input_shape     = (256, 256, 1) # for cnn
     # input_shape     = (256*256*1,)
     n_classes       = 2

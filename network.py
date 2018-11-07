@@ -47,12 +47,16 @@ class Network():
         if self.accuracy == 0.:
             score, model = train_and_score(self, config)
             self.accuracy = score[1]
-
-            message = '\n{}\nLoss: {} \nAcc: {}\n{}\n\n'.format('='*65, score[0], score[1], '='*65)
-            logging.info('\n\nModel:')
+            
+            print('*'*100)
+            print('acc %.2f' % score[1])
+            print('*'*100)
+            
             if model:
+                message = '\n{}\nLoss: {} \nAcc: {}\n{}\n\n'.format('='*65, score[0], score[1], '='*65)
+                logging.info('\n\nModel:')
                 logging.info( model.summary() )
-            logging.info(message)
+                logging.info(message)
 
     def model(self):
         p = self.params
