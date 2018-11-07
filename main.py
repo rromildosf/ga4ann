@@ -128,19 +128,21 @@ def evolve( config ):
 
 class Config():
     # Data settings
-    dataset_dir     = '../dataset_padded'
+    dataset_dir     = '../../dataset_aug'
+    subset = {'train': 'train_masks'}
     labels_filename = 'Y_truth.txt'
-    # input_shape     = (256, 256, 1) # for cnn
-    input_shape     = (256*256*1,)
-    n_classes       = 2
+    input_shape     = (256, 256, 1) # for cnn
+    out_dim  = (64, 64, 1)
+    flatten  = True
+    n_classes = 2
 
 
     # Network settings
     epochs  = 1000 # not exactly
-    batch_size = 32
+    batch_size = 320
     steps_per_epoch = 10
     validation_steps = 10
-    use_generator = False
+    use_generator = True
 
     # GA settings
     model_type   = 'ann'
@@ -150,7 +152,7 @@ class Config():
     #general settings
     verbose = 1
     min_acc = 0.5
-    early = False
+    early = True
 
 
 
@@ -164,7 +166,7 @@ def train( path, config ):
 if __name__ == '__main__':
     # TODO: add Argparser
     config = Config()
-    t = 1
+    t = 0
     if t == 0:
         evolve( config )
     elif t == 1:

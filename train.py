@@ -19,7 +19,7 @@ from keras.callbacks import EarlyStopping
 import random
 import numpy as np
 import tensorflow as tf
-from utils import create_model
+from utils import create_model, Dataset
 
 seed = 1
 random.seed(seed)
@@ -110,15 +110,11 @@ def compile_model(network, input_shape, nb_classes):
     
     return create_model( params, input_shape, nb_classes, network.model_type )
 
-def generator(X, Y, batch_size=10,):
-    inputs = np.zeros((batch_size, *X.shape[1:]))
-    outputs = np.zeros((batch_size, *Y.shape[1:]))
+def generator(dataset, batch_size=10, flatten=False):
     
-    while True:
-        for i in range( batch_size ):
-            idx = random.randint( 0, X.shape[0]-1 )
-            inputs[i] = X[idx]
-            outputs[i] = Y[idx]
+    while True:    
+        ids = np.random.choice( dataset.ids, batch_size )
+        inputs, outputs = dataset.load_set( ids, flatten=flatten )
         yield inputs, outputs
 
 
@@ -131,37 +127,63 @@ def train_and_score(config, network=None, model=None):
 
     """
     try:
-        x_train, y_train, x_test, y_test = load_dataset( config )
+        # Temporaly commented
+        # x_train, y_train, x_test, y_test = load_dataset( config )
+        dataset = Dataset( config.dataset_dir, 
+                            img_shape=config.input_shape, 
+                            label_shape=config.out_dim,
+                            subset=config.subset )
+        dataset.prepare()
+        train, val = dataset.split_dataset(0.2)
 
         if not model:
-            model = compile_model(network, config.input_shape, config.n_classes)
+            input_shape = config.input_shape if not config.flatten \
+                                             else (np.prod(config.input_shape),)
+            out_dim = config.out_dim if not config.flatten \
+                else np.prod(config.out_dim)
+
+            model = compile_model(network, input_shape, out_dim)
         
         callbacks = [early_stopper]
         if not config.early:
             callbacks = None
 
         if config.use_generator:
-            model.fit_generator( 
-                generator( x_train, y_train, config.batch_size ),
-                epochs=config.epochs,  # using early stopping, so no real limit
-                steps_per_epoch=config.steps_per_epoch,
-                validation_data=generator(x_test, y_test, config.batch_size),
-                validation_steps=config.validation_steps,
-                callbacks=callbacks,
-                verbose=1)
-        else:
-            model.fit(x_train, y_train,
-                #callbacks=[history])
-                batch_size=config.batch_size,
-                epochs=config.epochs,
-                verbose=1,
-                validation_data=(x_test, y_test),
-                callbacks=callbacks)
+            fit_generator( model, train, val, config, callbacks )
+            score = model.evaluate_generator( generator(val, 32, config.flatten),
+                                                steps=10, verbose=0)
 
-        score = model.evaluate(x_test, y_test, verbose=0)
+        else:
+            # TODO: load_dataset as child of Dataset
+            x_train, y_train, x_test, y_test = load_dataset(config)
+            fit( model, x_train, y_train, x_test, y_test, config, callbacks )
+            score = model.evaluate(x_test, y_test, verbose=0)
+
         return score, model
 
     except Exception:
         print( traceback.format_exc() )
         print('**** Error on fit ****')
         return [0.0, 0.0], None
+
+def fit_generator( model, train, val, config, callbacks=None ):
+    model.fit_generator(
+        generator(train, config.batch_size, config.flatten),
+        epochs=config.epochs,  # using early stopping, so no real limit
+        steps_per_epoch=config.steps_per_epoch,
+        validation_data=generator(val, config.batch_size, config.flatten),
+        validation_steps=config.validation_steps,
+        callbacks=callbacks,
+        verbose=1)
+    
+
+def fit( model, x_train, y_train, x_test, y_test, config, callbacks=None ):
+    """ TODO: change signature to fit_generator signature """
+    model.fit(x_train, y_train,
+        #callbacks=[history])
+        batch_size=config.batch_size,
+        epochs=config.epochs,
+        verbose=1,
+        validation_data=(x_test, y_test),
+        callbacks=callbacks)
+
