@@ -1,7 +1,6 @@
 """Entry point to evolving the neural network. Start here."""
 import logging
 from optimizer import Optimizer
-from tqdm import tqdm
 from utils import network_to_json
 
 # Setup logging.
@@ -19,11 +18,8 @@ def train_networks(networks, dataset):
         networks (list): Current population of networks
         dataset (str): Dataset to use for training/evaluating
     """
-    pbar = tqdm(total=len(networks))
     for network in networks:
         network.train(dataset)
-        pbar.update(1)
-    pbar.close()
 
 def get_average_accuracy(networks):
     """Get the average accuracy for a group of networks.
@@ -142,6 +138,7 @@ class Config():
     steps_per_epoch = 10
     validation_steps = 10
     batch_size = 32
+    use_generator = False
 
     # GA settings
     network_type = 'cnn'

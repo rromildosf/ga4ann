@@ -50,7 +50,7 @@ def split_dataset( inputs, outpts ):
 
     return (x_train, y_train), (x_test, y_test)
 
-def load_dataset( config, ext='png'):
+def load_dataset(config, ext='png'):
     """ Load dataset
     returns: (X, Y)
     """
@@ -177,23 +177,23 @@ def train_and_score(network, config):
 
         model = compile_model( network, config.n_classes, config.input_shape, config.network_type )
 
-        """model.fit_generator( 
+        if config.use_generator:
+            model.fit_generator( 
                 generator( x_train, y_train, config.batch_size ),
                 epochs=config.epochs,  # using early stopping, so no real limit
                 steps_per_epoch=config.steps_per_epoch,
                 validation_data=generator(x_test, y_test, config.batch_size),
                 validation_steps=config.validation_steps,
                 callbacks=[early_stopper],
-                verbose=1)"""
-        print(model.summary())
-        model.fit(x_train, y_train,
-                  batch_size=config.batch_size,
-                  epochs=config.epochs,
-                  # using early stopping so no real limit - don't want to waste time on horrible architectures
-                  verbose=1,
-                  validation_data=(x_test, y_test),
-                  #callbacks=[history])
-                  callbacks=[early_stopper])
+                verbose=1)
+        else:
+            model.fit(x_train, y_train,
+                #callbacks=[history])
+                batch_size=config.batch_size,
+                epochs=config.epochs,
+                verbose=1,
+                validation_data=(x_test, y_test),
+                callbacks=[early_stopper])
 
         score = model.evaluate(x_test, y_test, verbose=0)
         return score, model
