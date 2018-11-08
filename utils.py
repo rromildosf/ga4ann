@@ -63,8 +63,8 @@ def create_model(model_params, input_shape, out_dim, model_type):
     model.add(Dense(out_dim, activation='softmax'))
     
     ## TODO: remove from here
-    model.compile(loss='categorical_crossentropy', optimizer=optimizer,
-                  metrics=['acc'])
+    # model.compile(loss='categorical_crossentropy', optimizer=optimizer,
+    #               metrics=['acc'])
     return model
 
 def json_to_model( json_path, config ):

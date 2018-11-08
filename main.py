@@ -133,19 +133,18 @@ class Config():
     labels_filename = 'Y_truth.txt'
     input_shape     = (256, 256, 1) # for cnn
     out_dim  = (64, 64, 1)
-    flatten  = True
-    n_classes = 2
 
 
     # Network settings
     epochs  = 1000 # not exactly
-    batch_size = 320
+    batch_size = 1
     steps_per_epoch = 10
     validation_steps = 10
     use_generator = True
+    loss = 'binary_crossentropy'
 
     # GA settings
-    model_type   = 'ann'
+    model_type   = 'cnn'
     generations  = 1
     population   = 2
 
