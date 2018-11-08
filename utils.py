@@ -60,7 +60,7 @@ def create_model(model_params, input_shape, out_dim, model_type):
             drop += 1
 
     # Output layer.
-    model.add(Dense(out_dim, activation='softmax'))
+    model.add(Dense(out_dim, activation='sigmoid'))
     
     ## TODO: remove from here
     # model.compile(loss='categorical_crossentropy', optimizer=optimizer,
@@ -70,8 +70,10 @@ def create_model(model_params, input_shape, out_dim, model_type):
 def json_to_model( json_path, config ):
     with open( json_path, 'r' ) as fp:
         js = json.load( fp )
-    return create_model( js, config.input_shape, config.n_classes, config.model_type )
-
+    dim = np.prod(config.out_dim)
+    model = create_model( js, config.input_shape, dim, js['model_type'] )
+    model.compile(loss=config.loss, optimizer=js['optimizer'], metrics=['acc'])
+    return model
 
 class Dataset():
     

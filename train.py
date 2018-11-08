@@ -98,8 +98,9 @@ def load_dataset(config, ext='png'):
     x_test /= 255
 
     # convert class vectors to binary class matrices
-    y_train = to_categorical(y_train, config.n_classes)
-    y_test = to_categorical(y_test, config.n_classes)
+    out_dim = np.prod(config.out_dim)
+    y_train = to_categorical(y_train, out_dim)
+    y_test = to_categorical(y_test, out_dim)
     print(x_train.shape, x_test.shape, y_train.shape, y_test.shape)
     return (x_train, y_train, x_test, y_test)
 
@@ -149,8 +150,8 @@ def compile_model(network, input_shape, out_dim, loss):
 
 
 def generator(dataset, batch_size=10, flatten=False):
-    shape = dataset.img_shape if not flatten else (np.prod(dataset.img_shape),)
-    inputs = np.zeros((batch_size, *shape))
+    shape   = dataset.img_shape if not flatten else (np.prod(dataset.img_shape),)
+    inputs  = np.zeros((batch_size, *shape))
     outputs = np.zeros((batch_size, np.prod(dataset.label_shape)))
     while True:
         ids = np.random.choice(dataset.ids, batch_size)
@@ -170,14 +171,17 @@ def train_and_score(config, network=None, model=None):
 
     """
     try:
+        # TODO: Use Dataset class to load labeled data and masked data
         # Temporaly commented
         # x_train, y_train, x_test, y_test = load_dataset( config )
-        dataset = Dataset(config.dataset_dir,
+
+        if config.use_generator:
+            dataset = Dataset(config.dataset_dir,
                           img_shape=config.input_shape,
                           label_shape=config.out_dim,
                           subset=config.subset)
-        dataset.prepare()
-        train, val = dataset.split_dataset(0.2)
+            dataset.prepare()
+            train, val = dataset.split_dataset(0.2)
 
         flatten = config.model_type == 'ann'
 

@@ -128,19 +128,19 @@ def evolve( config ):
 
 class Config():
     # Data settings
-    dataset_dir     = '../../dataset_aug'
+    dataset_dir     = '../aug_2'
     subset = {'train': 'train_masks'}
-    labels_filename = 'Y_truth.txt'
+    labels_filename = 'labels.txt'
     input_shape     = (256, 256, 1) # for cnn
-    out_dim  = (64, 64, 1)
+    out_dim  = (64, 64, 1) # tuple of mask shape or tuple of output size. i.e. (10,)
 
 
     # Network settings
-    epochs  = 1000 # not exactly
-    batch_size = 1
-    steps_per_epoch = 10
+    epochs  = 10 # not exactly
+    batch_size = 10
+    steps_per_epoch = 100
     validation_steps = 10
-    use_generator = True
+    use_generator = False
     loss = 'binary_crossentropy'
 
     # GA settings
@@ -155,7 +155,12 @@ class Config():
 
 
 
-def train( path, config ):
+def train( path ):
+    class ConfigTrain(Config):
+        early=False
+
+    config = ConfigTrain()
+
     model = json_to_model(path, config)
     score, model = train_and_score(config, model=model)
     print(score)
@@ -165,11 +170,11 @@ def train( path, config ):
 if __name__ == '__main__':
     # TODO: add Argparser
     config = Config()
-    t = 0
+    t = 1
     if t == 0:
         evolve( config )
     elif t == 1:
-        model_path = 'acc.0.7632_opt.nadam_act.elu.json'
-        train(model_path, config)
+        model_path = 'model.json'
+        train(model_path)
     else: print('Nothing to do ;)')
     
