@@ -39,7 +39,7 @@ class Network():
         """
         self.params = params
 
-    def train(self, config):
+    def train(self, config, x_train=None, y_train=None, x_test=None, y_test=None):
         """Train the network and record the accuracy.
 
         Args:
@@ -49,7 +49,8 @@ class Network():
         self.model_type = config.model_type
 
         if self.accuracy == 0.:
-            score, _ = train_and_score(config, self)
+            score, _ = train_and_score(
+                config, self, x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
             self.accuracy = score[1]
             
             if config.verbose == 1:

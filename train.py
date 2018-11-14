@@ -28,7 +28,7 @@ tf.set_random_seed(seed)
 
 
 # Helper: Early stopping.
-early_stopper = EarlyStopping(patience=5)
+early_stopper = EarlyStopping('prec', patience=5, verbose=1)
 
 # TODO: move to utils
 
@@ -140,18 +140,20 @@ def f1(y_true, y_pred):
 def compile_model(network, input_shape, out_dim, loss):
     # TODO: Add compile here
     params = network.params.copy()
+    if network.model_type == 'cnn':
+        params['cnn_layers'] = network.nb_neurons('cnn')
     params['ann_layers'] = network.nb_neurons('ann')
-    params['cnn_layers'] = network.nb_neurons('cnn')
     optimizer = params['optimizer']
 
     model = create_model(params, input_shape, out_dim, network.model_type)
-    model.compile(loss=loss, optimizer=optimizer, metrics=['acc', prec, rcall, f1])
+    model.compile(loss=loss, optimizer=optimizer,
+                  metrics=[prec, 'acc', rcall, f1])
     return model
 
 
 def generator(dataset, batch_size=10, flatten=False):
-    shape   = dataset.img_shape if not flatten else (np.prod(dataset.img_shape),)
-    inputs  = np.zeros((batch_size, *shape))
+    shape = dataset.img_shape if not flatten else (np.prod(dataset.img_shape),)
+    inputs = np.zeros((batch_size, *shape))
     outputs = np.zeros((batch_size, np.prod(dataset.label_shape)))
     while True:
         ids = np.random.choice(dataset.ids, batch_size)
@@ -162,7 +164,19 @@ def generator(dataset, batch_size=10, flatten=False):
         yield inputs, outputs
 
 
-def train_and_score(config, network=None, model=None):
+def generator_v2( X, Y, batch_size=10, flatten=False):
+    inputs = np.zeros((batch_size, *X.shape[1:]))
+    outputs = np.zeros((batch_size, *Y.shape[1:]))
+    while True:
+        for i in range(batch_size):
+            idx = random.randint(0, X.shape[0]-1)
+            inputs[i] = X[idx]
+            outputs[i] = Y[idx]
+        yield inputs, outputs
+
+
+def train_and_score(config, network=None, model=None,
+                    x_train=None, y_train=None, x_test=None, y_test=None):
     """Train the model, return test loss.
 
     Args:
@@ -171,42 +185,51 @@ def train_and_score(config, network=None, model=None):
 
     """
     try:
+
         # TODO: Use Dataset class to load labeled data and masked data
         # Temporaly commented
         # x_train, y_train, x_test, y_test = load_dataset( config )
-
-        if config.use_generator:
-            dataset = Dataset(config.dataset_dir,
-                          img_shape=config.input_shape,
-                          label_shape=config.out_dim,
-                          subset=config.subset)
-            dataset.prepare()
-            train, val = dataset.split_dataset(0.2)
-
         flatten = config.model_type == 'ann'
-
         if not model:
             input_shape = config.input_shape if not flatten \
                 else (np.prod(config.input_shape),)
             out_dim = np.prod(config.out_dim)
             model = compile_model(network, input_shape, out_dim, config.loss)
-
-        callbacks = [early_stopper]
-        if not config.early:
-            callbacks = None
+        
+        
+        callbacks = [early_stopper] if config.early else None
 
         if config.use_generator:
-            fit_generator(model, train, val, config, flatten, callbacks)
-            score = model.evaluate_generator(generator(val, 32, flatten),
-                                             steps=10, verbose=0)
+            if x_train is None:
+                dataset = Dataset(config.dataset_dir,
+                              img_shape=config.input_shape,
+                              label_shape=config.out_dim,
+                              subset=config.subset)
+                dataset.prepare()
+                train, val = dataset.split_dataset(0.2)
+                
+                fit_generator(model, train, val, config, flatten, callbacks)
+                score = model.evaluate_generator(generator(val, 32, flatten),
+                                                steps=10, verbose=0)
+            else:
+                fit_generator_v2(model, x_train, y_train, config, flatten, callbacks)
+                score = model.evaluate_generator(generator_v2(x_train, y_train, 32, flatten),
+                                                 steps=10, verbose=0)
+                
+            
 
         else:
             # TODO: load_dataset as child of Dataset
-            x_train, y_train, x_test, y_test = load_dataset(config)
+            if x_train is None or y_train is None:
+                x_train, y_train, x_test, y_test = load_dataset(config)
             fit(model, x_train, y_train, x_test, y_test, config, callbacks)
-            score = model.evaluate(x_test, y_test, verbose=0)
+            if not x_test is None and not y_test is None:
+                score = model.evaluate(x_test, y_test, verbose=0)
+            else:
+                score = model.evaluate(x_train, y_train, verbose=0)
+        K.clear_session()
 
-        return score, model
+        return score
 
     except Exception:
         print(traceback.format_exc())
@@ -225,13 +248,25 @@ def fit_generator(model, train, val, config, flatten, callbacks=None):
         callbacks=callbacks,
         verbose=1)
 
+def fit_generator_v2(model, train, val, config, flatten, callbacks=None):
+
+    model.fit_generator(
+        generator_v2(train, val, config.batch_size, flatten),
+        epochs=config.epochs,  # using early stopping, so no real limit
+        steps_per_epoch=config.steps_per_epoch,
+        validation_data=generator_v2(train, val, config.batch_size, flatten),
+        validation_steps=config.validation_steps,
+        callbacks=callbacks,
+        verbose=1)
+
 
 def fit(model, x_train, y_train, x_test, y_test, config, callbacks=None):
     """ TODO: change signature to fit_generator signature """
+    print(callbacks)
     model.fit(x_train, y_train,
               # callbacks=[history])
               batch_size=config.batch_size,
               epochs=config.epochs,
               verbose=1,
-              validation_data=(x_test, y_test),
+              #   validation_data=(x_test, y_test),/
               callbacks=callbacks)
