@@ -1,10 +1,105 @@
-import json
 import os
+import json
 import numpy as np
-from skimage.io import imread
+
+import keras.backend as K
 from keras.preprocessing import image
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, MaxPooling2D, Conv2D, Flatten
+from keras.utils.np_utils import to_categorical
+
+from skimage import io
+from sklearn.model_selection import StratifiedKFold
+
+def split_dataset( x, y, n_splits=10, out_dim=None ):
+    fold = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=1)
+    
+    for train, test in fold.split(x, y):
+        if out_dim:
+            return x[train], to_categorical( y[train] ), \
+                   x[test], to_categorical( y[test] )
+        return x[train], y[train], x[test], y[test]
+    
+
+def load_dataset(config, ext='png', split=False):
+    """ Load dataset
+    returns: (X, Y)
+    """
+    def srt(el):
+        return int(el.split('.')[-2].split('_')[-1])
+
+    Y = np.loadtxt(os.path.join(config.dataset_dir, config.labels_filename))
+
+    imgs = [i for i in os.listdir(config.dataset_dir) if i.endswith(ext)]
+    imgs.sort(key=srt)
+
+    X = []
+    for i in imgs:
+        img = io.imread(os.path.join(config.dataset_dir, i), asGray=True)
+        X.append(img)
+
+    # 50% + 50%
+    inputs = []
+    outpts = []
+    for x, y in zip(X, Y):
+        if y == 1.0:
+            inputs.append(x)
+            outpts.append(y)
+    c = 0
+    l = len(inputs)
+    for x, y in zip(X, Y):
+        if y == 0.0 and c < l:
+            inputs.append(x)
+            outpts.append(y)
+            c += 1
+
+    # convert class vectors to binary class matrices
+    out_dim = np.prod(config.out_dim)
+    
+    inputs = np.array(inputs)
+    outpts = np.array(outpts)
+    inputs = inputs.reshape(inputs.shape[0], *config.input_shape)
+    inputs = inputs.astype(np.float32)
+    inputs /= 255.
+    
+    if split:
+        return split_dataset( inputs, outpts, out_dim=out_dim )    
+    # changed to use cross validation
+    return inputs, outpts, to_categorical(outpts, out_dim)
+
+        
+
+def prec(y_true, y_pred):
+    """
+      Calculates the precision metrics
+    """
+
+    TP = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    TP_FP = K.sum(K.round(K.clip(y_pred, 0, 1)))  # TP + FP == YP
+    precision = TP / (TP_FP + K.epsilon())
+    return precision
+
+
+def rcall(y_true, y_pred):
+    """
+      Calculates the recall metrics
+    """
+
+    TP = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    TP_FN = K.sum(K.round(K.clip(y_true, 0, 1)))  # TP + FN == YT
+    recall = TP / (TP_FN + K.epsilon())
+    return recall
+
+
+def f1(y_true, y_pred):
+    """
+      Calculates F1 Score metrics
+    """
+
+    p = prec(y_true, y_pred)
+    r = rcall(y_true, y_pred)
+    return 2*p*r / (r + p)
+
 
 # TEST -> OK
 def network_to_json( network ):
@@ -60,7 +155,7 @@ def create_model(model_params, input_shape, out_dim, model_type):
             drop += 1
 
     # Output layer.
-    model.add(Dense(out_dim, activation='sigmoid'))
+    model.add(Dense(out_dim, activation='softmax'))
     
     ## TODO: remove from here
     # model.compile(loss='categorical_crossentropy', optimizer=optimizer,
@@ -72,7 +167,7 @@ def json_to_model( json_path, config ):
         js = json.load( fp )
     dim = np.prod(config.out_dim)
     model = create_model( js, config.input_shape, dim, js['model_type'] )
-    model.compile(loss=config.loss, optimizer=js['optimizer'], metrics=['acc'])
+    model.compile(loss=config.loss, optimizer=js['optimizer'], metrics=['acc', prec, rcall, f1])
     return model
 
 class Dataset():

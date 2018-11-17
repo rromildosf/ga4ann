@@ -62,7 +62,6 @@ def generate(generations, population, nn_param_choices, config,
         logging.info("***Doing generation %d of %d***" %
                      (i + 1, generations))
 
-        print(x_train.shape)
         # Train and get accuracy for networks.
         train_networks(networks, config, x_train=x_train,
                        y_train=y_train, x_test=x_test, y_test=y_test)
@@ -105,8 +104,6 @@ def evolve(config, nn_params, x_train=None, y_train=None, x_test=None, y_test=No
     generations = config.generations  # Number of times to evole the population.
     population = config.population  # Number of networks in each generation.
 
-    print(x_train.shape)
-
     if config.model_type == 'cnn':
         cnn_nb_layers = nn_params['cnn_nb_layers']
         cnn_max_layers = 128
@@ -127,29 +124,29 @@ def evolve(config, nn_params, x_train=None, y_train=None, x_test=None, y_test=No
 
 class Config():
     # Data settings
-    dataset_dir = '/home/romildo/Desktop/teeth_seg/src/dataset_3'
+    dataset_dir = '../dataset_padded_1_aug'
     # subset = {'train': 'train_masks'}
-    # labels_filename = 'labels.txt'
-    input_shape = (374, 256, 1)  # must be a tuple
+    labels_filename = 'labels.txt'
+    input_shape = (256, 256, 1)  # must be a tuple
     # tuple of mask shape or tuple of output size. i.e. (10,)
-    out_dim = (64, 64, 1)
+    out_dim = (2,)
 
     # Network settings
-    epochs = 10  # not exactly
+    epochs = 1000  # not exactly
     batch_size = 10
     steps_per_epoch = 100
     validation_steps = 10
     use_generator = False
-    loss = 'binary_crossentropy'
+    loss = 'mean_squared_error'
 
     # GA settings
     model_type = 'cnn'
-    generations = 1
-    population = 2
+    generations = 30
+    population = 30
 
     #general settings
     verbose = 1
-    min_acc = 0.5
+    min_acc = 0.7
     early = True
 
 
@@ -158,8 +155,7 @@ def train(config, path,  x_train=None, y_train=None, x_test=None, y_test=None):
     score = train_and_score(
         config, model=model, x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
     print(score)
-    model.summary()
-    model.save('model_%.2f.h5' % score[1])
+    return score
 
 
 if __name__ == '__main__':
@@ -182,10 +178,5 @@ if __name__ == '__main__':
             # image. ie: image shape is (256, 256, deep), 256 is 2**8, so 8 is X, so the great value should be 8-2 = 6
         }
         evolve(config, nn_params)
-    elif t == 1:
-        pass
-        # TODO: to fix
-        # model_path = 'model.json'
-        # train(model_path)
     else:
         print('Nothing to do ;)')
