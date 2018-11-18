@@ -21,7 +21,7 @@ def split_dataset( x, y, n_splits=10, out_dim=None ):
         return x[train], y[train], x[test], y[test]
     
 
-def load_dataset(config, ext='png', split=False):
+def load_dataset(config, ext='png', flatten=False, split=False):
     """ Load dataset
     returns: (X, Y)
     """
@@ -55,10 +55,10 @@ def load_dataset(config, ext='png', split=False):
 
     # convert class vectors to binary class matrices
     out_dim = np.prod(config.out_dim)
-    
+    input_shape = config.input_shape if not flatten else (np.prod(config.input_shape),)
     inputs = np.array(inputs)
     outpts = np.array(outpts)
-    inputs = inputs.reshape(inputs.shape[0], *config.input_shape)
+    inputs = inputs.reshape(inputs.shape[0], *input_shape)
     inputs = inputs.astype(np.float32)
     inputs /= 255.
     
@@ -138,7 +138,7 @@ def create_model(model_params, input_shape, out_dim, model_type):
         for i in range(1, cnn_nb_layers):
             model.add(
                 Conv2D(cnn_nb_neurons[i], (3, 3), activation=cnn_activation, padding='same'))
-            if i % pooling == 0 and pool <= pooling:
+            if i % 2 != 0 and pool <= pooling:
                 model.add(MaxPooling2D(2))
                 pool += 1
 
@@ -151,7 +151,7 @@ def create_model(model_params, input_shape, out_dim, model_type):
     drop = 0
     for i in range(index, ann_nb_layers):
         model.add(Dense(ann_nb_neurons[i], activation=ann_activation))
-        if i % dropout == 0 and drop <= dropout:
+        if i % 2 != 0 and drop <= dropout:
             model.add(Dropout(0.5))
             drop += 1
 

@@ -149,7 +149,7 @@ def train_and_score(config, network=None, model=None,
         else:
             # TODO: load_dataset as child of Dataset
             if x_train is None or y_train is None:
-                x_train, y_train, x_test, y_test = utils.load_dataset(config, split=True)
+                x_train, y_train, x_test, y_test = utils.load_dataset(config, flatten=flatten, split=True)
             fit(model, x_train, y_train, x_test, y_test, config, callbacks)
             if not x_test is None and not y_test is None:
                 score = model.evaluate(x_test, y_test, verbose=0)
