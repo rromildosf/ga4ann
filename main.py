@@ -137,7 +137,7 @@ class Config():
     steps_per_epoch = 100
     validation_steps = 10
     use_generator = False
-    loss = 'mean_squared_error'
+#     loss = 'binary_crossentropy'
 
     # GA settings
     model_type = 'cnn'
@@ -148,6 +148,7 @@ class Config():
     verbose = 1
     min_acc = 0.7
     early = True
+    tb_log_dir = '/content/IA/My Drive/carie_seg/tb_logs/aug4/'
 
 
 def train(config, path,  x_train=None, y_train=None, x_test=None, y_test=None):

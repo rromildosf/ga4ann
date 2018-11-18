@@ -57,7 +57,7 @@ def f1(y_true, y_pred):
     return 2*p*r / (r + p)
 
 
-def compile_model(network, input_shape, out_dim, loss):
+def compile_model(network, input_shape, out_dim):
     # TODO: Remove loss param
     params = network.params.copy()
     if network.model_type == 'cnn':
@@ -121,7 +121,7 @@ def train_and_score(config, network=None, model=None,
             input_shape = config.input_shape if not flatten \
                 else (np.prod(config.input_shape),)
             out_dim = np.prod(config.out_dim)
-            model = compile_model(network, input_shape, out_dim, config.loss)
+            model = compile_model(network, input_shape, out_dim)
         
         callbacks = [tb]
         if config.early :
