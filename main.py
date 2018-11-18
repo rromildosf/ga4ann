@@ -124,7 +124,7 @@ def evolve(config, nn_params, x_train=None, y_train=None, x_test=None, y_test=No
 
 class Config():
     # Data settings
-    dataset_dir = '../dataset_padded_1_aug'
+    dataset_dir = '../data1_pd_aug4'
     # subset = {'train': 'train_masks'}
     labels_filename = 'labels.txt'
     input_shape = (256, 256, 1)  # must be a tuple
@@ -171,6 +171,8 @@ if __name__ == '__main__':
             'ann_nb_layers': [1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 17, 23],
             'ann_nb_neurons': [2, 32, 12, 64, 128, 13, 17, 23, 29, 31, 43],
             'ann_activation': ['relu', 'elu', 'tanh', 'sigmoid'],
+            'ann_last_activation': ['tanh', 'sigmoid', 'softmax'],
+            'loss': ['binary_crossentropy', 'categorical_crossentropy', 'logcosh', 'mean_squared_error'],
             'optimizer': ['rmsprop', 'adam', 'sgd', 'adagrad', 'adadelta', 'adamax', 'nadam'],
             'dropout': [1, 2, 3, 4, 5, 6],  # 2**8
             # the great value should be X-2, X is the exponent of size of

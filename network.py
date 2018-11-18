@@ -75,7 +75,9 @@ class Network():
             'cnn_activation': p['cnn_activation'],
             'ann_nb_layers' : p['ann_nb_layers' ],
             'ann_activation': p['ann_activation'],
+            'ann_last_activation': p['ann_activation'],
             'optimizer': p['optimizer'],
+            'loss': p['loss'],
             'dropout': p['dropout'],
             'pooling': p['pooling'],
             'model_type': self.model_type

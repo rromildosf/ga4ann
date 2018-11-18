@@ -121,6 +121,7 @@ def create_model(model_params, input_shape, out_dim, model_type):
     ann_nb_layers  = model_params['ann_nb_layers']
     ann_nb_neurons = model_params['ann_layers']
     ann_activation = model_params['ann_activation']
+    ann_last_activation = model_params['ann_last_activation']
 
     optimizer = model_params['optimizer']
     dropout   = model_params['dropout']
@@ -155,7 +156,7 @@ def create_model(model_params, input_shape, out_dim, model_type):
             drop += 1
 
     # Output layer.
-    model.add(Dense(out_dim, activation='softmax'))
+    model.add(Dense(out_dim, activation=ann_last_activation))
     
     ## TODO: remove from here
     # model.compile(loss='categorical_crossentropy', optimizer=optimizer,
@@ -167,7 +168,7 @@ def json_to_model( json_path, config ):
         js = json.load( fp )
     dim = np.prod(config.out_dim)
     model = create_model( js, config.input_shape, dim, js['model_type'] )
-    model.compile(loss=config.loss, optimizer=js['optimizer'], metrics=['acc', prec, rcall, f1])
+    model.compile(loss=js['loss'], optimizer=js['optimizer'], metrics=['acc', prec, rcall, f1])
     return model
 
 class Dataset():

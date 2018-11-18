@@ -22,15 +22,9 @@ import utils
 from utils import create_model, Dataset
 
 seed = 1
-random.seed(seed)
-np.random.seed(seed)
-tf.set_random_seed(seed)
-
 
 # Helper: Early stopping.
 early_stopper = EarlyStopping('val_acc', patience=5, verbose=1)
-tb = TensorBoard(log_dir='/content/IA/My Drive/IA/logs_dataset1_aug_t2')
-
 def prec(y_true, y_pred):
     """
       Calculates the precision metrics
@@ -64,16 +58,17 @@ def f1(y_true, y_pred):
 
 
 def compile_model(network, input_shape, out_dim, loss):
-    # TODO: Add compile here
+    # TODO: Remove loss param
     params = network.params.copy()
     if network.model_type == 'cnn':
         params['cnn_layers'] = network.nb_neurons('cnn')
     params['ann_layers'] = network.nb_neurons('ann')
     optimizer = params['optimizer']
+    loss = params['loss']
 
     model = create_model(params, input_shape, out_dim, network.model_type)
     model.compile(loss=loss, optimizer=optimizer,
-                  metrics=[prec, 'acc'])
+                  metrics=['acc', prec])
     return model
 
 
@@ -110,6 +105,12 @@ def train_and_score(config, network=None, model=None,
         dataset (str): Dataset to use for training/evaluating
 
     """
+    random.seed(seed)
+    np.random.seed(seed)
+    tf.set_random_seed(seed)
+    
+    tb = TensorBoard(log_dir=config.tb_log_dir)
+    
     try:
 
         # TODO: Use Dataset class to load labeled data and masked data
