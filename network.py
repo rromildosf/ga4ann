@@ -71,26 +71,30 @@ class Network():
     def model(self):
         p = self.params
         network = {
-            'cnn_nb_layers' : p['cnn_nb_layers' ],
-            'cnn_activation': p['cnn_activation'],
             'ann_nb_layers' : p['ann_nb_layers' ],
             'ann_activation': p['ann_activation'],
             'ann_last_activation': p['ann_activation'],
             'optimizer': p['optimizer'],
             'loss': p['loss'],
             'dropout': p['dropout'],
-            'pooling': p['pooling'],
             'model_type': self.model_type
         }
-        cnn_layers = []
-        for i in range(self.params['cnn_nb_layers']):
-            cnn_layers.append( self.params['cnn_nb_neurons_%d' % (i+1)] )
+        
+        if self.model_type == 'cnn':
+            network['cnn_nb_layers' ] = p['cnn_nb_layers' ]
+            network['cnn_activation'] = p['cnn_activation']
+            network['pooling'] = p['pooling']
+
+            cnn_layers = []
+            for i in range(self.params['cnn_nb_layers']):
+                cnn_layers.append( self.params['cnn_nb_neurons_%d' % (i+1)] )
+            network['cnn_layers'] = cnn_layers
 
         ann_layers = []
         for i in range(self.params['ann_nb_layers']):
             ann_layers.append( self.params['ann_nb_neurons_%d' % (i+1)] )
         
-        network['cnn_layers'] = cnn_layers
+        
         network['ann_layers'] = ann_layers
 
         return network

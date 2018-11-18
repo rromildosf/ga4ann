@@ -190,7 +190,6 @@ def fit_generator_v2(model, train, val, config, flatten, callbacks=None):
 
 def fit(model, x_train, y_train, x_test, y_test, config, callbacks=None):
     """ TODO: change signature to fit_generator signature """
-    print(callbacks)
     model.fit(x_train, y_train,
               # callbacks=[history])
               batch_size=config.batch_size,
