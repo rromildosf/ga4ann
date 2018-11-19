@@ -110,7 +110,8 @@ def network_to_json( network ):
     json.dump( network.model(), fp, indent=4 )
 
 def create_model(model_params, input_shape, out_dim, model_type):
-
+    if model_type == 'ann':
+        input_shape = (np.prod( input_shape ),)
     # Get our network parameters.
     if model_type == 'cnn':
         cnn_nb_layers  = model_params['cnn_nb_layers']
@@ -123,7 +124,6 @@ def create_model(model_params, input_shape, out_dim, model_type):
     ann_activation = model_params['ann_activation']
     ann_last_activation = model_params['ann_last_activation']
 
-    optimizer = model_params['optimizer']
     dropout   = model_params['dropout']
 
     model = Sequential()

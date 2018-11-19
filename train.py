@@ -109,21 +109,23 @@ def train_and_score(config, network=None, model=None,
     np.random.seed(seed)
     tf.set_random_seed(seed)
     
-    tb = TensorBoard(log_dir=config.tb_log_dir)
+    flatten = config.model_type == 'ann'
+    callbacks = []
+    if config.tb_log_dir:
+        callbacks.append( TensorBoard(log_dir=config.tb_log_dir) )
     
     try:
 
         # TODO: Use Dataset class to load labeled data and masked data
         # Temporaly commented
-        # x_train, y_train, x_test, y_test = load_dataset( config )
-        flatten = config.model_type == 'ann'
+        
+        
         if not model:
             input_shape = config.input_shape if not flatten \
                 else (np.prod(config.input_shape),)
             out_dim = np.prod(config.out_dim)
             model = compile_model(network, input_shape, out_dim)
         
-        callbacks = [tb]
         if config.early :
             callbacks.append( early_stopper )
 

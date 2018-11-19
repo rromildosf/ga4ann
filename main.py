@@ -4,15 +4,6 @@ from optimizer import Optimizer
 from utils import network_to_json, json_to_model
 from train import train_and_score
 
-# Setup logging.
-logging.basicConfig(
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%m/%d/%Y %I:%M:%S %p',
-    level=logging.INFO,
-    filename='log_detect_1.txt'
-)
-
-
 def train_networks(networks, config, x_train=None, y_train=None, x_test=None, y_test=None):
     """Train each network.
 
@@ -121,65 +112,27 @@ def evolve(config, nn_params, x_train=None, y_train=None, x_test=None, y_test=No
     generate(generations, population, nn_params, config,
              x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
 
-
-class Config():
-    # Data settings
-    dataset_dir = '../data1_pd_aug4'
-    # subset = {'train': 'train_masks'}
-    labels_filename = 'labels.txt'
-    input_shape = (256, 256, 1)  # must be a tuple
-    # tuple of mask shape or tuple of output size. i.e. (10,)
-    out_dim = (2,)
-
-    # Network settings
-    epochs = 1000  # not exactly
-    batch_size = 10
-    steps_per_epoch = 100
-    validation_steps = 10
-    use_generator = False
-#     loss = 'binary_crossentropy'
-
-    # GA settings
-    model_type = 'cnn'
-    generations = 30
-    population = 30
-
-    #general settings
-    verbose = 1
-    min_acc = 0.7
-    early = True
-    tb_log_dir = '/content/IA/My Drive/carie_seg/tb_logs/aug4/'
-
-
 def train(config, path,  x_train=None, y_train=None, x_test=None, y_test=None):
     model = json_to_model(path, config)
     score = train_and_score(
         config, model=model, x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
-    print(score)
     return score
 
+# Example of params
+# nn_params = {
+#     'cnn_nb_layers' : [1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 17, 23],
+#     'cnn_nb_neurons': [2, 32, 12, 64, 128, 13, 17, 23, 29, 31, 43],
+#     'cnn_activation': ['relu', 'elu', 'tanh', 'sigmoid'],
 
-if __name__ == '__main__':
-    # TODO: add Argparser
-    config = Config()
-    t = 0
-    if t == 0:
-        nn_params = {
-            'cnn_nb_layers': [1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 17, 23],
-            'cnn_nb_neurons': [2, 32, 12, 64, 128, 13, 17, 23, 29, 31, 43],
-            'cnn_activation': ['relu', 'elu', 'tanh', 'sigmoid'],
-
-            'ann_nb_layers': [1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 17, 23],
-            'ann_nb_neurons': [2, 32, 12, 64, 128, 13, 17, 23, 29, 31, 43],
-            'ann_activation': ['relu', 'elu', 'tanh', 'sigmoid'],
-            'ann_last_activation': ['tanh', 'sigmoid', 'softmax'],
-            'loss': ['binary_crossentropy', 'categorical_crossentropy', 'logcosh', 'mean_squared_error'],
-            'optimizer': ['rmsprop', 'adam', 'sgd', 'adagrad', 'adadelta', 'adamax', 'nadam'],
-            'dropout': [1, 2, 3, 4, 5, 6],  # 2**8
-            # the great value should be X-2, X is the exponent of size of
-            'pooling': [1, 2, 3, 4, 5, 6],
-            # image. ie: image shape is (256, 256, deep), 256 is 2**8, so 8 is X, so the great value should be 8-2 = 6
-        }
-        evolve(config, nn_params)
-    else:
-        print('Nothing to do ;)')
+#     'ann_nb_layers' : [1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 17, 23],
+#     'ann_nb_neurons': [2, 32, 12, 64, 128, 13, 17, 23, 29, 31, 43],
+#     'ann_activation': ['relu', 'elu', 'tanh', 'sigmoid'],
+#     'ann_last_activation': ['tanh', 'sigmoid', 'softmax'],
+#     'loss': ['binary_crossentropy', 'categorical_crossentropy', 'logcosh', 'mean_squared_error'],
+#     'optimizer': ['rmsprop', 'adam', 'sgd', 'adagrad', 'adadelta', 'adamax', 'nadam'],
+#     'dropout': [1, 2, 3, 4, 5, 6],  # 2**8
+#     # the great value should be X-2, X is the exponent of size of
+#     'pooling': [1, 2, 3, 4, 5, 6],
+#     # image. ie: image shape is (256, 256, deep), 256 is 2**8, so 8 is X, so the great value should be 8-2 = 6
+# }
+# evolve(config, nn_params)
