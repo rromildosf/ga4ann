@@ -12,17 +12,18 @@ from keras.initializers import glorot_normal
 from skimage import io
 from sklearn.model_selection import StratifiedKFold
 
-def split_dataset( x, y, n_splits=10, out_dim=None ):
+def split_dataset( x, y, n_splits=10, out_dim=None, fold=0 ):
     fold = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=1)
-    
+    i = 0
     for train, test in fold.split(x, y):
-        if out_dim:
-            return x[train], to_categorical( y[train] ), \
+        if i == fold:
+            if out_dim:
+                return x[train], to_categorical( y[train] ), \
                    x[test], to_categorical( y[test] )
-        return x[train], y[train], x[test], y[test]
+            return x[train], y[train], x[test], y[test]
     
 
-def load_dataset(config, ext='png', flatten=False, split=False):
+def load_dataset(config, ext='png', flatten=False, split=False, fold=0):
     """ Load dataset
     returns: (X, Y)
     """
@@ -64,7 +65,7 @@ def load_dataset(config, ext='png', flatten=False, split=False):
     inputs /= 255.
     
     if split:
-        return split_dataset( inputs, outpts, out_dim=out_dim )    
+        return split_dataset( inputs, outpts, out_dim=out_dim, fold=fold )    
     # changed to use cross validation
     return inputs, outpts, to_categorical(outpts, out_dim)
 
@@ -157,7 +158,7 @@ def create_model(model_params, input_shape, out_dim, model_type):
                         kernel_initializer=init,
                         bias_initializer='zeros'))
         if i % 2 != 0 and drop <= dropout:
-            model.add(Dropout(0.5, seed=1))
+            model.add(Dropout(0.5))
             drop += 1
 
     # Output layer.
