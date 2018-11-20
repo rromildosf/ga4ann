@@ -27,7 +27,7 @@ class EvConfig(Config):
     batch_size = 100
     steps_per_epoch = 100
     validation_steps = 10
-    use_generator = True
+    use_generator = False
 
     #general settings
     min_acc = 0.7

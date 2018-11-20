@@ -7,6 +7,7 @@ from keras.preprocessing import image
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, MaxPooling2D, Conv2D, Flatten
 from keras.utils.np_utils import to_categorical
+from keras.initializers import glorot_normal
 
 from skimage import io
 from sklearn.model_selection import StratifiedKFold
@@ -128,7 +129,7 @@ def create_model(model_params, input_shape, out_dim, model_type):
 
     model = Sequential()
     index = 0  # start index of ann
-
+    init = glorot_normal(1)
     if model_type == 'cnn':
         model.add(Conv2D(cnn_nb_neurons[0], (3, 3), padding='same',
                          activation=cnn_activation,
@@ -147,20 +148,23 @@ def create_model(model_params, input_shape, out_dim, model_type):
         # Add each layer.
         index = 1
         model.add(Dense(ann_nb_neurons[0], activation=ann_activation,
-                        input_shape=input_shape))
+                        input_shape=input_shape,
+                        kernel_initializer=init,
+                        bias_initializer='zeros'))
     drop = 0
     for i in range(index, ann_nb_layers):
-        model.add(Dense(ann_nb_neurons[i], activation=ann_activation))
+        model.add(Dense(ann_nb_neurons[i], activation=ann_activation,
+                        kernel_initializer=init,
+                        bias_initializer='zeros'))
         if i % 2 != 0 and drop <= dropout:
-            model.add(Dropout(0.5))
+            model.add(Dropout(0.5, seed=1))
             drop += 1
 
     # Output layer.
-    model.add(Dense(out_dim, activation=ann_last_activation))
+    model.add(Dense(out_dim, activation=ann_last_activation,
+                    kernel_initializer=init,
+                    bias_initializer='zeros'))
     
-    ## TODO: remove from here
-    # model.compile(loss='categorical_crossentropy', optimizer=optimizer,
-    #               metrics=['acc'])
     return model
 
 def json_to_model( json_path, config ):

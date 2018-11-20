@@ -24,7 +24,7 @@ from utils import create_model, Dataset
 seed = 1
 
 # Helper: Early stopping.
-early_stopper = EarlyStopping('val_acc', patience=5, verbose=1)
+early_stopper = EarlyStopping('val_acc', patience=10, verbose=1)
 def prec(y_true, y_pred):
     """
       Calculates the precision metrics
@@ -68,7 +68,7 @@ def compile_model(network, input_shape, out_dim):
 
     model = create_model(params, input_shape, out_dim, network.model_type)
     model.compile(loss=loss, optimizer=optimizer,
-                  metrics=['acc', prec])
+                  metrics=['acc', prec] )
     return model
 
 
@@ -108,6 +108,7 @@ def train_and_score(config, network=None, model=None,
     random.seed(seed)
     np.random.seed(seed)
     tf.set_random_seed(seed)
+    os.environ['PYTHONHASHSEED'] = '0'
     
     flatten = config.model_type == 'ann'
     callbacks = []
@@ -157,6 +158,7 @@ def train_and_score(config, network=None, model=None,
                 score = model.evaluate(x_test, y_test, verbose=0)
             else:
                 score = model.evaluate(x_train, y_train, verbose=0)
+        model.summary()
         K.clear_session()
 
         return score
