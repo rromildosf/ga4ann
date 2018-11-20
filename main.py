@@ -114,9 +114,9 @@ def evolve(config, nn_params, x_train=None, y_train=None, x_test=None, y_test=No
 
 def train(config, path,  x_train=None, y_train=None, x_test=None, y_test=None):
     model = json_to_model(path, config)
-    score = train_and_score(
+    score, h = train_and_score(
         config, model=model, x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
-    return score
+    return score, h
 
 # Example of params
 # nn_params = {

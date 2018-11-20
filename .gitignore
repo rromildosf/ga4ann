@@ -2,3 +2,6 @@ __pycache__/
 *.txt
 *.json
 *.h5
+logs/
+.ipynb_checkpoints/
+*.ipynb

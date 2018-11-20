@@ -12,7 +12,7 @@ from skimage import color, transform, io
 from keras.datasets import mnist, cifar10
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, MaxPooling2D, Conv2D, Flatten
-from keras.callbacks import EarlyStopping, TensorBoard
+from keras.callbacks import EarlyStopping, TensorBoard, ModelCheckpoint, History
 import keras.backend as K
 
 import random
@@ -24,7 +24,10 @@ from utils import create_model, Dataset
 seed = 1
 
 # Helper: Early stopping.
-early_stopper = EarlyStopping('val_acc', patience=10, verbose=1)
+early_stopper = EarlyStopping(
+    'val_acc', patience=10, verbose=1, restore_best_weights=True)
+
+
 def prec(y_true, y_pred):
     """
       Calculates the precision metrics
@@ -68,7 +71,7 @@ def compile_model(network, input_shape, out_dim):
 
     model = create_model(params, input_shape, out_dim, network.model_type)
     model.compile(loss=loss, optimizer=optimizer,
-                  metrics=['acc', prec] )
+                  metrics=['acc', prec])
     return model
 
 
@@ -85,7 +88,7 @@ def generator(dataset, batch_size=10, flatten=False):
         yield inputs, outputs
 
 
-def generator_v2( X, Y, batch_size=10, flatten=False):
+def generator_v2(X, Y, batch_size=10, flatten=False):
     inputs = np.zeros((batch_size, *X.shape[1:]))
     outputs = np.zeros((batch_size, *Y.shape[1:]))
     while True:
@@ -109,50 +112,56 @@ def train_and_score(config, network=None, model=None,
     np.random.seed(seed)
     tf.set_random_seed(seed)
     os.environ['PYTHONHASHSEED'] = '0'
-    
+
     flatten = config.model_type == 'ann'
-    callbacks = []
+    history = History()
+    callbacks = [history]
     if config.tb_log_dir:
-        callbacks.append( TensorBoard(log_dir=config.tb_log_dir) )
-    
+        callbacks.append(TensorBoard(log_dir=config.tb_log_dir))
+
+    if config.checkpoint:
+        checkpoint = ModelCheckpoint('%s.{epoch:02d}-{val_acc:.2f}.hdf5' % config.checkpoint,
+                                     monitor='val_acc', save_best_only=True,
+                                     save_weights_only=True, period=1)
+        callbacks.append(checkpoint)
+
     try:
 
         # TODO: Use Dataset class to load labeled data and masked data
         # Temporaly commented
-        
-        
+
         if not model:
             input_shape = config.input_shape if not flatten \
                 else (np.prod(config.input_shape),)
             out_dim = np.prod(config.out_dim)
             model = compile_model(network, input_shape, out_dim)
-        
-        if config.early :
-            callbacks.append( early_stopper )
+
+        if config.early:
+            callbacks.append(early_stopper)
 
         if config.use_generator:
             if x_train is None:
                 dataset = Dataset(config.dataset_dir,
-                              img_shape=config.input_shape,
-                              label_shape=config.out_dim,
-                              subset=config.subset)
+                                  img_shape=config.input_shape,
+                                  label_shape=config.out_dim,
+                                  subset=config.subset)
                 dataset.prepare()
                 train, val = dataset.split_dataset(0.2)
-                
+
                 fit_generator(model, train, val, config, flatten, callbacks)
                 score = model.evaluate_generator(generator(val, 32, flatten),
-                                                steps=10, verbose=0)
+                                                 steps=10, verbose=0)
             else:
-                fit_generator_v2(model, x_train, y_train, config, flatten, callbacks)
+                fit_generator_v2(model, x_train, y_train,
+                                 config, flatten, callbacks)
                 score = model.evaluate_generator(generator_v2(x_train, y_train, 32, flatten),
                                                  steps=10, verbose=0)
-                
-            
 
         else:
             # TODO: load_dataset as child of Dataset
             if x_train is None or y_train is None:
-                x_train, y_train, x_test, y_test = utils.load_dataset(config, flatten=flatten, split=True)
+                x_train, y_train, x_test, y_test = utils.load_dataset(
+                    config, flatten=flatten, split=True)
             fit(model, x_train, y_train, x_test, y_test, config, callbacks)
             if not x_test is None and not y_test is None:
                 score = model.evaluate(x_test, y_test, verbose=0)
@@ -161,7 +170,7 @@ def train_and_score(config, network=None, model=None,
         model.summary()
         K.clear_session()
 
-        return score
+        return score, history
 
     except Exception:
         print(traceback.format_exc())
@@ -179,6 +188,7 @@ def fit_generator(model, train, val, config, flatten, callbacks=None):
         validation_steps=config.validation_steps,
         callbacks=callbacks,
         verbose=1)
+
 
 def fit_generator_v2(model, train, val, config, flatten, callbacks=None):
 
@@ -200,5 +210,5 @@ def fit(model, x_train, y_train, x_test, y_test, config, callbacks=None):
               epochs=config.epochs,
               verbose=1,
               validation_data=(x_test, y_test),
-#               validation_steps=config.validation_steps,
+              #               validation_steps=config.validation_steps,
               callbacks=callbacks)

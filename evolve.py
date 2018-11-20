@@ -47,5 +47,7 @@ nn_params = {
     'dropout': [1, 2, 3, 4, 5, 6],  # 2**8
 }
         
-x_train, y_train, x_test, y_test = utils.load_dataset( config, flatten=True, split=True )
+flatten = config.model_type == 'ann'
+logging.info( "Envolving on dataset: %s" % config.dataset_dir )
+x_train, y_train, x_test, y_test = utils.load_dataset( config, flatten=flatten, split=True )
 main.evolve( config, nn_params, x_train, y_train, x_test, y_test )
