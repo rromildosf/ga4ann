@@ -33,7 +33,8 @@ class EvConfig(Config):
     min_acc = 0.7
     early = True
     
-    tb_log_dir = 'logs/test'
+    tb_log_dir = 'logs/test2'
+    checkpoint = 'logs/test2'
     
 config = EvConfig()
 
@@ -49,5 +50,5 @@ nn_params = {
         
 flatten = config.model_type == 'ann'
 logging.info( "Envolving on dataset: %s" % config.dataset_dir )
-x_train, y_train, x_test, y_test = utils.load_dataset( config, flatten=flatten, split=True )
-main.evolve( config, nn_params, x_train, y_train, x_test, y_test )
+x, Y, _ = utils.load_dataset( config, flatten=flatten, split=False )
+main.evolve( config, nn_params, x, Y, None, None, use_cv=True )

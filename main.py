@@ -3,17 +3,25 @@ import logging
 from optimizer import Optimizer
 from utils import network_to_json, json_to_model
 from train import train_and_score
+from sklearn.model_selection import StratifiedKFold
+from keras.utils.np_utils import to_categorical
+import random
 
-def train_networks(networks, config, x_train=None, y_train=None, x_test=None, y_test=None):
+def train_networks(networks, config, x_train=None, y_train=None, x_test=None, y_test=None, gen=0):
     """Train each network.
 
     Args:
         networks (list): Current population of networks
         dataset (str): Dataset to use for training/evaluating
     """
+    bck = config.checkpoint + ''
+    c = 0
     for network in networks:
+        
+        config.checkpoint += ('_gen%d_u%d' % (gen, c ) ); c+=1
         network.train(config, x_train=x_train, y_train=y_train,
                       x_test=x_test, y_test=y_test)
+        config.checkpoint = bck
 
 
 def get_average_accuracy(networks):
@@ -34,7 +42,7 @@ def get_average_accuracy(networks):
 
 
 def generate(generations, population, nn_param_choices, config,
-             x_train=None, y_train=None, x_test=None, y_test=None):
+             x_train=None, y_train=None, x_test=None, y_test=None, use_cv=False ):
     """Generate a network with the genetic algorithm.
 
     Args:
@@ -47,15 +55,29 @@ def generate(generations, population, nn_param_choices, config,
     optimizer = Optimizer(nn_param_choices)
     networks = optimizer.create_population(population)
 
+    if use_cv:
+        folds = []
+        skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=1)
+        for train, test in skf.split(x_train, y_train):
+            y_tn = to_categorical(y_train[train])
+            y_tt = to_categorical(y_train[test])
+
+            folds.append((x_train[train], y_tn,
+                          x_train[test], y_tt))
+    
     # Evolve the generation.
     for i in range(generations):
 
         logging.info("***Doing generation %d of %d***" %
                      (i + 1, generations))
 
+        if use_cv:
+            choice = random.randint(0, len(folds)-1)
+            x_train, y_train, x_test, y_test = folds[choice]
+
         # Train and get accuracy for networks.
         train_networks(networks, config, x_train=x_train,
-                       y_train=y_train, x_test=x_test, y_test=y_test)
+                       y_train=y_train, x_test=x_test, y_test=y_test, gen=i+1)
 
         # Get the average accuracy for this generation.
         average_accuracy = get_average_accuracy(networks)
@@ -90,7 +112,7 @@ def print_networks(networks):
         network_to_json(network)
 
 
-def evolve(config, nn_params, x_train=None, y_train=None, x_test=None, y_test=None):
+def evolve(config, nn_params, x_train=None, y_train=None, x_test=None, y_test=None, use_cv=False):
     """Evolve a network."""
     generations = config.generations  # Number of times to evole the population.
     population = config.population  # Number of networks in each generation.
@@ -110,7 +132,7 @@ def evolve(config, nn_params, x_train=None, y_train=None, x_test=None, y_test=No
                  (generations, population))
 
     generate(generations, population, nn_params, config,
-             x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
+             x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test, use_cv=use_cv)
 
 def train(config, path,  x_train=None, y_train=None, x_test=None, y_test=None):
     model = json_to_model(path, config)

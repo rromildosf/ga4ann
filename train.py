@@ -24,8 +24,7 @@ from utils import create_model, Dataset
 seed = 1
 
 # Helper: Early stopping.
-early_stopper = EarlyStopping(
-    'val_acc', patience=10, verbose=1, restore_best_weights=True)
+early_stopper = EarlyStopping('val_acc', patience=10, verbose=1)
 
 
 def prec(y_true, y_pred):
