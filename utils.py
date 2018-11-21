@@ -5,9 +5,10 @@ import numpy as np
 import keras.backend as K
 from keras.preprocessing import image
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, MaxPooling2D, Conv2D, Flatten
+from keras.layers import Dense, Dropout, MaxPooling2D, Conv2D, Flatten, BatchNormalization
 from keras.utils.np_utils import to_categorical
 from keras.initializers import glorot_normal
+from keras import regularizers
 
 from skimage import io
 from sklearn.model_selection import StratifiedKFold
@@ -149,22 +150,30 @@ def create_model(model_params, input_shape, out_dim, model_type):
         # Add each layer.
         index = 1
         model.add(Dense(ann_nb_neurons[0], activation=ann_activation,
-                        input_shape=input_shape,
-                        kernel_initializer=init,
+                        # input_shape=input_shape,
+                        # kernel_initializer=init,
                         bias_initializer='zeros'))
     drop = 0
     for i in range(index, ann_nb_layers):
         model.add(Dense(ann_nb_neurons[i], activation=ann_activation,
-                        kernel_initializer=init,
-                        bias_initializer='zeros'))
+                        # kernel_initializer=init,
+                        # bias_initializer='zeros', 
+                        kernel_regularizer=regularizers.l2(0.01),
+                        activity_regularizer=regularizers.l1(0.01)))
+
         if i % 2 != 0 and drop <= dropout:
             model.add(Dropout(0.5))
             drop += 1
+        if i % 3 == 0:
+            model.add(BatchNormalization())
+    model.add(BatchNormalization())
+
 
     # Output layer.
     model.add(Dense(out_dim, activation=ann_last_activation,
-                    kernel_initializer=init,
-                    bias_initializer='zeros'))
+                    # kernel_initializer=init,
+                    # bias_initializer='zeros'
+                    ))
     
     return model
 

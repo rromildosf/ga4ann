@@ -14,14 +14,19 @@ def train_networks(networks, config, x_train=None, y_train=None, x_test=None, y_
         networks (list): Current population of networks
         dataset (str): Dataset to use for training/evaluating
     """
-    bck = config.checkpoint + ''
+    check = config.checkpoint + ''
+    log_dir = config.tb_log_dir + ''
     c = 0
     for network in networks:
         
-        config.checkpoint += ('_gen%d_u%d' % (gen, c ) ); c+=1
+        config.checkpoint += ('/gen%d/u%d' % (gen, c))
+        config.tb_log_dir += ('/gen%d/u%d' % (gen, c))
+    
+        c+=1
         network.train(config, x_train=x_train, y_train=y_train,
                       x_test=x_test, y_test=y_test)
-        config.checkpoint = bck
+        config.checkpoint = check
+        config.tb_log_dir = log_dir
 
 
 def get_average_accuracy(networks):
@@ -73,7 +78,7 @@ def generate(generations, population, nn_param_choices, config,
 
         if use_cv:
             choice = random.randint(0, len(folds)-1)
-            x_train, y_train, x_test, y_test = folds[choice]
+            x_test, y_test, x_train, y_train, = folds[choice]
 
         # Train and get accuracy for networks.
         train_networks(networks, config, x_train=x_train,

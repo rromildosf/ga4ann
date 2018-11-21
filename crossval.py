@@ -15,20 +15,21 @@ def get_models( prefix='acc' ):
 
 class CVConfig(Config):
     # Data settings
-    dataset_dir = 'data1_pd_aug4'
-    labels_filename = 'labels.txt'
+    dataset_dir = '../dataset_1_padded'
+    labels_filename = 'Y_truth.txt'
     input_shape = (256, 256, 1)
     out_dim = (2,)
 
     # Network settings
-    epochs = 25  #
+    epochs = 125  #
     use_generator = False
 
     # GA settings
     model_type = 'ann'
     early = False
 
-    tb_log_dir = './logs/ann_097/'
+    checkpoint = './logs/DT_007D'
+    tb_log_dir = './logs/DT_007D'
 
 
 config = CVConfig()
@@ -44,12 +45,12 @@ def apply_crossval( x, y, Y, model, n_folds=10 ):
         print("Running Fold", c+1, "/", n_folds)
 
         if log_dir:
-            config.tb_log_dir = log_dir + '/fold' + str(c)
+            config.tb_log_dir = os.path.join(log_dir,'fold%d'%(c))
 
 
         keras_model = utils.json_to_model(model, config)
-        score = train_and_score(config, model=keras_model,
-                              x_train=x[train], y_train=y[train], x_test=x[test], y_test=y[test] )
+        score, _ = train_and_score(config, model=keras_model,
+                              x_train=x[test], y_train=y[test], x_test=x[train], y_test=y[train] )
         K.clear_session() # clear model
         
 
@@ -79,7 +80,12 @@ def run_model():
     x, Y, y,  = utils.load_dataset(config, split=False, flatten=True)
     n_folds = 10
 
-    m = 'model.json'
+    m = 'acc[0.7250]_opt[sgd]_act[sigmoid].json'
     apply_crossval( x, y, Y, model=m, n_folds=n_folds )
 
 run_model()
+
+def make():
+    m = ''
+    model = utils.json_to_model(m)
+    model.load_weights('/home/romildo/Desktop/CARIE_CLASSIFICATION/gann/logs/')

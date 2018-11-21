@@ -14,6 +14,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, MaxPooling2D, Conv2D, Flatten
 from keras.callbacks import EarlyStopping, TensorBoard, ModelCheckpoint, History
 import keras.backend as K
+from keras.preprocessing.image import ImageDataGenerator
 
 import random
 import numpy as np
@@ -107,10 +108,10 @@ def train_and_score(config, network=None, model=None,
         dataset (str): Dataset to use for training/evaluating
 
     """
+
     random.seed(seed)
     np.random.seed(seed)
     tf.set_random_seed(seed)
-    os.environ['PYTHONHASHSEED'] = '0'
 
     flatten = config.model_type == 'ann'
     history = History()
@@ -119,8 +120,8 @@ def train_and_score(config, network=None, model=None,
         callbacks.append(TensorBoard(log_dir=config.tb_log_dir))
 
     if config.checkpoint:
-        checkpoint = ModelCheckpoint('%s.{epoch:02d}-{val_acc:.2f}.hdf5' % config.checkpoint,
-                                     monitor='val_acc', save_best_only=True,
+        check_dir = os.path.join( config.checkpoint, '.{epoch:02d}-{val_acc:.2f}.hdf5' )
+        checkpoint = ModelCheckpoint( check_dir, monitor='val_acc', save_best_only=True,
                                      save_weights_only=True, period=1)
         callbacks.append(checkpoint)
 
