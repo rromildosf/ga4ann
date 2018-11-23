@@ -78,7 +78,7 @@ def generate(generations, population, nn_param_choices, config,
 
         if use_cv:
             choice = random.randint(0, len(folds)-1)
-            x_test, y_test, x_train, y_train, = folds[choice]
+            x_train, y_train, x_test, y_test = folds[choice]
 
         # Train and get accuracy for networks.
         train_networks(networks, config, x_train=x_train,

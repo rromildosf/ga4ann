@@ -25,7 +25,7 @@ from utils import create_model, Dataset
 seed = 1
 
 # Helper: Early stopping.
-early_stopper = EarlyStopping('val_acc', patience=10, verbose=1)
+early_stopper = EarlyStopping('val_acc', patience=6, verbose=0)
 
 
 def prec(y_true, y_pred):
@@ -88,13 +88,16 @@ def generator(dataset, batch_size=10, flatten=False):
         yield inputs, outputs
 
 
-def generator_v2(X, Y, batch_size=10, flatten=False):
-    inputs = np.zeros((batch_size, *X.shape[1:]))
+def generator_v2(X, Y, batch_size=10, input_shape=None, flatten=False):
+   
+    inputs = np.zeros((batch_size, *input_shape))
     outputs = np.zeros((batch_size, *Y.shape[1:]))
+    
     while True:
         for i in range(batch_size):
             idx = random.randint(0, X.shape[0]-1)
-            inputs[i] = X[idx]
+            img = utils.load_image(X[idx], input_shape)
+            inputs[i] = img
             outputs[i] = Y[idx]
         yield inputs, outputs
 
@@ -154,8 +157,10 @@ def train_and_score(config, network=None, model=None,
             else:
                 fit_generator_v2(model, x_train, y_train,
                                  config, flatten, callbacks)
-                score = model.evaluate_generator(generator_v2(x_train, y_train, 32, flatten),
-                                                 steps=10, verbose=0)
+                score = model.evaluate_generator(
+                        generator_v2(x_train, y_train,
+                        config.batch_size, config.input_shape, flatten),
+                        steps=10, verbose=0)
 
         else:
             # TODO: load_dataset as child of Dataset
@@ -193,10 +198,10 @@ def fit_generator(model, train, val, config, flatten, callbacks=None):
 def fit_generator_v2(model, train, val, config, flatten, callbacks=None):
 
     model.fit_generator(
-        generator_v2(train, val, config.batch_size, flatten),
+        generator_v2(train, val, config.batch_size, config.input_shape, flatten),
         epochs=config.epochs,  # using early stopping, so no real limit
         steps_per_epoch=config.steps_per_epoch,
-        validation_data=generator_v2(train, val, config.batch_size, flatten),
+        validation_data=generator_v2(train, val, config.batch_size, config.input_shape, flatten),
         validation_steps=config.validation_steps,
         callbacks=callbacks,
         verbose=1)

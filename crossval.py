@@ -28,8 +28,8 @@ class CVConfig(Config):
     model_type = 'ann'
     early = False
 
-    checkpoint = './logs/DT_007D'
-    tb_log_dir = './logs/DT_007D'
+    checkpoint = './logs/DT_011D_CV'
+    tb_log_dir = './logs/DT_011D_CV'
 
 
 config = CVConfig()
@@ -80,7 +80,7 @@ def run_model():
     x, Y, y,  = utils.load_dataset(config, split=False, flatten=True)
     n_folds = 10
 
-    m = 'acc[0.7250]_opt[sgd]_act[sigmoid].json'
+    m = 'DT_011D_acc[0.7853]_opt[rmsprop]_act[relu]14.json'
     apply_crossval( x, y, Y, model=m, n_folds=n_folds )
 
 run_model()
