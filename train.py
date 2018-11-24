@@ -25,7 +25,7 @@ from utils import create_model, Dataset
 seed = 1
 
 # Helper: Early stopping.
-early_stopper = EarlyStopping('val_acc', patience=6, verbose=0)
+early_stopper = EarlyStopping('val_acc', patience=5, verbose=0)
 
 
 def prec(y_true, y_pred):
@@ -88,17 +88,35 @@ def generator(dataset, batch_size=10, flatten=False):
         yield inputs, outputs
 
 
+def shuffle(x, y):
+    seed_ = 1 #random.randint(0, 100)
+    state = np.random.get_state()
+    np.random.seed(seed_)
+    np.random.shuffle(x)
+    
+    np.random.seed(seed_)
+    np.random.shuffle(y)
+    np.random.set_state(state)
+
+    return x, y # no returns needed, shuffle is inplace
+
 def generator_v2(X, Y, batch_size=10, input_shape=None, flatten=False):
-   
+    l = X.shape[0]    
     inputs = np.zeros((batch_size, *input_shape))
     outputs = np.zeros((batch_size, *Y.shape[1:]))
-    
+
+    shuffle(X, Y)
+
     while True:
-        for i in range(batch_size):
-            idx = random.randint(0, X.shape[0]-1)
-            img = utils.load_image(X[idx], input_shape)
+        for i in range( batch_size ):
+            idi = random.randint( 0, l-1 )
+            
+            img = utils.load_image(X[idi], input_shape)
             inputs[i] = img
-            outputs[i] = Y[idx]
+            outputs[i] = Y[idi]
+
+        # shuffle(inputs, outputs) #no needed
+
         yield inputs, outputs
 
 
@@ -123,7 +141,7 @@ def train_and_score(config, network=None, model=None,
         callbacks.append(TensorBoard(log_dir=config.tb_log_dir))
 
     if config.checkpoint:
-        check_dir = os.path.join( config.checkpoint, '.{epoch:02d}-{val_acc:.2f}.hdf5' )
+        check_dir = os.path.join( config.checkpoint, 'w.{epoch:02d}-{val_acc:.2f}.hdf5' )
         checkpoint = ModelCheckpoint( check_dir, monitor='val_acc', save_best_only=True,
                                      save_weights_only=True, period=1)
         callbacks.append(checkpoint)

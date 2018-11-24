@@ -1,5 +1,5 @@
 import main
-from  train import train_and_score
+from train import train_and_score
 import utils
 from config import Config
 import numpy as np
@@ -8,21 +8,23 @@ import logging
 import os
 import keras.backend as K
 
-def get_models( prefix='acc' ):
+
+def get_models(prefix='acc'):
     allfiles = os.listdir('./')
     models = [m for m in allfiles if m.startswith(prefix)]
     return models
 
+
 class CVConfig(Config):
     # Data settings
-    dataset_dir = '../dataset_1_padded'
-    labels_filename = 'Y_truth.txt'
+    dataset_dir = '../data1_pd_aug5'
+    labels_filename = 'labels.txt'
     input_shape = (256, 256, 1)
     out_dim = (2,)
 
     # Network settings
     epochs = 125  #
-    use_generator = False
+    use_generator = True
 
     # GA settings
     model_type = 'ann'
@@ -34,7 +36,8 @@ class CVConfig(Config):
 
 config = CVConfig()
 
-def apply_crossval( x, y, Y, model, n_folds=10 ):
+
+def apply_crossval(x, y, Y, model, n_folds=10):
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=1)
 
     c = 0
@@ -45,14 +48,12 @@ def apply_crossval( x, y, Y, model, n_folds=10 ):
         print("Running Fold", c+1, "/", n_folds)
 
         if log_dir:
-            config.tb_log_dir = os.path.join(log_dir,'fold%d'%(c))
-
+            config.tb_log_dir = os.path.join(log_dir, 'fold%d' % (c))
 
         keras_model = utils.json_to_model(model, config)
         score, _ = train_and_score(config, model=keras_model,
-                              x_train=x[test], y_train=y[test], x_test=x[train], y_test=y[train] )
-        K.clear_session() # clear model
-        
+                                   x_train=x[test], y_train=y[test], x_test=x[train], y_test=y[train])
+        K.clear_session()  # clear model
 
         print('Acc: %.2f%% \nLoss: %.2f' % (score[1]*100, score[0]))
         scores.append(score[1]*100)
@@ -67,25 +68,24 @@ def apply_crossval( x, y, Y, model, n_folds=10 ):
     logging.info('Std %f' % std)
     print('Acc: %.2f%% \t Std: %.2f' % (mean, std))
 
+
 def run_allmodels():
     x, Y, y,  = utils.load_dataset(config, split=False, flatten=True)
     n_folds = 2
 
     models = get_models()
     for m in models:
-        apply_crossval( x, y, Y, model=m, n_folds=n_folds )
+        apply_crossval(x, y, Y, model=m, n_folds=n_folds)
         print(m, end=('*'*30))
 
+
 def run_model():
-    x, Y, y,  = utils.load_dataset(config, split=False, flatten=True)
+    x, Y, y,  = utils.load_dataset(
+        config, split=False, flatten=True, load=False)
     n_folds = 10
 
-    m = 'DT_011D_acc[0.7853]_opt[rmsprop]_act[relu]14.json'
-    apply_crossval( x, y, Y, model=m, n_folds=n_folds )
+    m = 'acc[0.8812]_opt[adam]_act[tanh].json'
+    apply_crossval(x, y, Y, model=m, n_folds=n_folds)
+
 
 run_model()
-
-def make():
-    m = ''
-    model = utils.json_to_model(m)
-    model.load_weights('/home/romildo/Desktop/CARIE_CLASSIFICATION/gann/logs/')

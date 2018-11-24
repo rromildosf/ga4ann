@@ -3,18 +3,10 @@ from config import Config
 import main
 import logging
 
-logging.basicConfig(
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%m/%d/%Y %I:%M:%S %p',
-    level=logging.INFO,
-    filename='ann_only.txt'
-)
-
-
 class EvConfig(Config):
     # Data settings
-    dataset_dir = '../data1_pd_aug5'
-    labels_filename = 'labels.txt'
+    dataset_dir = '../dataset_1_padded'
+    labels_filename = 'Y_truth.txt'
     input_shape = (256, 256, 1)
     out_dim = (2,)
 
@@ -25,7 +17,7 @@ class EvConfig(Config):
 
     # Network settings
     epochs = 1000  # not exactly
-    batch_size = 1
+    batch_size = 10
     steps_per_epoch = 10
     validation_steps = 1
     use_generator = True
@@ -39,6 +31,14 @@ class EvConfig(Config):
 
 
 config = EvConfig()
+
+# config loggind
+logging.basicConfig(
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%m/%d/%Y %I:%M:%S %p',
+    level=logging.INFO,
+    filename=config.tb_log_dir+'.txt'
+)
 
 nn_params = {
     'cnn_nb_layers': [1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 17, 23],
